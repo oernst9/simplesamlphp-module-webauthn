@@ -20,15 +20,21 @@ You can install this module with composer:
 
 How to setup the webauthn module
 -----------------------------------------
-You need to enable and configure the module's authprocfilter at a priority level
+You need to enable the module's authprocfilter at a priority level
 so that it takes place AFTER the first-factor authentication. E.g. at 100:
 
 ```php
-100 => 
-    ['class' => 'webauthn:WebAuthn',
+100 => [
+        'class' => 'webauthn:WebAuthn',
+    ],
+```
+Then you need to create module_webauthn.php file in the config directory which will
+contain all the attributes:
 
-    /* required configuration parameters */
+ /* required configuration parameters */
+```php
 
+$config = [
         'store' => [
             'webauthn:Database',
             'database.dsn' => 'mysql:host=db.example.org;dbname=fido2',
@@ -107,6 +113,7 @@ so that it takes place AFTER the first-factor authentication. E.g. at 100:
     'use_inflow_registration' => true,
     ],
 ```
+
 
 Using storage
 -------------

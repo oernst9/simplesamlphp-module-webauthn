@@ -6,15 +6,6 @@ namespace SimpleSAML\Module\webauthn\WebAuthn;
 
 class StateData
 {
-
-
-
-
-
-    //jen proměnné co používá registration.php
-
-
-
     /**
      * backend storage configuration. Required.
      *
@@ -55,35 +46,6 @@ class StateData
      * @var boolean
      */
     public $requestTokenModel;
-
-    /**
-     * @var boolean should new users be considered as enabled by default?
-     */
-    public $defaultEnabled;
-
-    /**
-     * @var boolean switch that determines how $toggle will be used, if true then value of $toggle
-     *              will mean whether to trigger (true) or not (false) the webauthn authentication,
-     *              if false then $toggle means whether to switch the value of $defaultEnabled and then use that
-     */
-    public $force;
-
-    /**
-     * @var boolean an attribute which is associated with $force because it determines its meaning,
-     *              it either simply means whether to trigger webauthn authentication or switch the default settings,
-     *              if null (was not sent as attribute) then the information from database is used
-     */
-    public $toggleAttrib;
-
-    /**
-     * @var bool a bool that determines whether to use local database or not
-     */
-    public $useDatabase;
-
-    /**
-     * @var string|null AuthnContextClassRef
-     */
-    public $authnContextClassRef = null;
 
     /**
      * @var bool an attribute which determines whether you will be able to register and manage tokens

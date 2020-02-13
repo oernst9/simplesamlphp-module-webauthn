@@ -12,17 +12,53 @@
 
 namespace SimpleSAML\Module\webauthn\Auth\Process;
 
-use _HumbugBox3ab8cff0fda0\FFI\Exception;
 use SimpleSAML\Auth;
 use SimpleSAML\Error;
 use SimpleSAML\Logger;
 use SimpleSAML\Module;
 use SimpleSAML\Module\webauthn\Store;
+use SimpleSAML\Module\webauthn\WebAuthn\StaticProcessHelper;
 use SimpleSAML\Utils;
+use SimpleSAML\Configuration;
 
 class WebAuthn extends Auth\ProcessingFilter
 {
+    /**
+     * An object with all the parameters that will be needed in the process
+     *
+     * @var Module\webauthn\WebAuthn\StateData
+     */
     private $stateData;
+
+    /**
+     * @var boolean should new users be considered as enabled by default?
+     */
+    public $defaultEnabled;
+
+    /**
+     * @var boolean switch that determines how $toggle will be used, if true then value of $toggle
+     *              will mean whether to trigger (true) or not (false) the webauthn authentication,
+     *              if false then $toggle means whether to switch the value of $defaultEnabled and then use that
+     */
+    public $force;
+
+    /**
+     * @var boolean an attribute which is associated with $force because it determines its meaning,
+     *              it either simply means whether to trigger webauthn authentication or switch the default settings,
+     *              if null (was not sent as attribute) then the information from database is used
+     */
+    public $toggleAttrib;
+
+    /**
+     * @var bool a bool that determines whether to use local database or not
+     */
+    public $useDatabase;
+
+    /**
+     * @var string|null AuthnContextClassRef
+     */
+    public $authnContextClassRef = null;
+
     /**
      * Initialize filter.
      *
@@ -41,6 +77,9 @@ class WebAuthn extends Auth\ProcessingFilter
          */
         assert(is_array($config));
         parent::__construct($config, $reserved);
+
+        $this->stateData = new Module\webauthn\WebAuthn\StateData();
+
         $moduleConfig = Configuration::getOptionalConfig('module_webauthn.php')->toArray();
         try {
             $this->stateData->store = Store::parseStoreConfig($moduleConfig['store']);
@@ -81,28 +120,28 @@ class WebAuthn extends Auth\ProcessingFilter
             $this->stateData->requestTokenModel = false;
         }
         if (array_key_exists('default_enable', $moduleConfig)) {
-            $this->stateData->defaultEnabled = $moduleConfig['default_enable'];
+            $this->defaultEnabled = $moduleConfig['default_enable'];
         } else {
-            $this->stateData->defaultEnabled = false;
+            $this->defaultEnabled = false;
         }
 
         if (array_key_exists('force', $moduleConfig)) {
-            $this->stateData->force = $moduleConfig['force'];
+            $this->force = $moduleConfig['force'];
         } else {
-            $this->stateData->force = true;
+            $this->force = true;
         }
         if (array_key_exists('attrib_toggle', $moduleConfig)) {
-            $this->stateData->toggleAttrib = $moduleConfig['attrib_toggle'];
+            $this->toggleAttrib = $moduleConfig['attrib_toggle'];
         } else {
-            $this->stateData->toggleAttrib = 'toggle';
+            $this->toggleAttrib = 'toggle';
         }
         if (array_key_exists('use_database', $moduleConfig)) {
-            $this->stateData->useDatabase = $moduleConfig['use_database'];
+            $this->useDatabase = $moduleConfig['use_database'];
         } else {
-            $this->stateData->useDatabase = true;
+            $this->useDatabase = true;
         }
         if (array_key_exists('authnContextClassRef', $moduleConfig)) {
-            $this->stateData->authnContextClassRef = $moduleConfig['authnContextClassRef'];
+            $this->authnContextClassRef = $moduleConfig['authnContextClassRef'];
 
         }
         if (array_key_exists('use_inflow_registration', $moduleConfig)) {
@@ -111,6 +150,7 @@ class WebAuthn extends Auth\ProcessingFilter
             $this->stateData->useInflowRegistration = true;
         }
     }
+
     /**
      * Process a authentication response
      *
@@ -139,15 +179,16 @@ class WebAuthn extends Auth\ProcessingFilter
                 $this->stateData->usernameAttrib . '".');
             return;
         }
-        $state['saml:AuthnContextClassRef'] = $this->authnContextClassRef ?? 'urn:rsa:names:tc:SAML:2.0:ac:classes:FIDO';
 
-        Logger::debug('webauthn: userid: ' . $state['Attributes'][$this->usernameAttrib][0]);
+        $state['saml:AuthnContextClassRef'] = $this->authnContextClassRef ?? 'urn:rsa:names:tc:SAML:2.0:ac:classes:FIDO';
+        Logger::debug('webauthn: userid: ' . $state['Attributes'][$this->stateData->usernameAttrib][0]);
 
         $localToggle = !empty($state['Attributes'][$this->toggleAttrib])
             && !empty($state['Attributes'][$this->toggleAttrib][0]);
+
         if (
-            $this->store->is2FAEnabled(
-                $state['Attributes'][$this->usernameAttrib][0],
+            $this->stateData->store->is2FAEnabled(
+                $state['Attributes'][$this->stateData->usernameAttrib][0],
                 $this->defaultEnabled,
                 $this->useDatabase,
                 $localToggle,
@@ -157,31 +198,7 @@ class WebAuthn extends Auth\ProcessingFilter
             // nothing to be done here, end authprocfilter processing
             return;
         }
-        self::prepareState($this->stateData, $state);
-        self::saveStateAndRedirect($state);
-
+        StaticProcessHelper::prepareState($this->stateData, $state);
+        StaticProcessHelper::saveStateAndRedirect($state);
     }
-
-    //do vlastní třídy
-    public static function saveStateAndRedirect(&$state) {
-        $id = Auth\State::saveState($state, 'webauthn:request');
-        $url = Module::getModuleURL('webauthn/webauthn.php');
-        Utils\HTTP::redirectTrustedURL($url, ['StateId' => $id]);
-    }
-
-    public static function prepareState($stateData, &$state) {
-
-        $state['requestTokenModel'] = $stateData->requestTokenModel;
-        $state['webauthn:store'] = $stateData->store;
-        $state['FIDO2Tokens'] = $stateData->store->getTokenData($state['Attributes'][$stateData->usernameAttrib][0]);
-        $state['FIDO2Scope'] = $stateData->scope;
-        $state['FIDO2DerivedScope'] = $stateData->derivedScope;
-        $state['FIDO2Username'] = $state['Attributes'][$stateData->usernameAttrib][0];
-        $state['FIDO2Displayname'] = $state['Attributes'][$stateData->displaynameAttrib][0]; //NEBUDE FUNGOVAT KVŮLI DVĚMA DRUHŮM JMEN
-        $state['FIDO2SignupChallenge'] = hash('sha512', random_bytes(64));
-        $state['FIDO2WantsRegister'] = false;
-        $state['FIDO2AuthSuccessful'] = false;
-        $state['UseInflowRegistration'] = $stateData->useInflowRegistration;
-    }
-
 }

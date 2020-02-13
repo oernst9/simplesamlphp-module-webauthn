@@ -63,6 +63,7 @@ function authButtonClick()
         console.log('ASSERTION', assertion);
     })
     .catch((err) => {
+        alert("Something went wrong. It is possible that you are trying to use an invalid token.")
         console.log('ERROR', err);
     });
 }
