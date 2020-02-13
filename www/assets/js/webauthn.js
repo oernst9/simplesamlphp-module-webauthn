@@ -16,6 +16,10 @@ function BinaryToString(binary)
     }
 }
 
+function authenticate() {
+    setTimeout(function() {document.getElementById("authformSubmit").click();}, 500)
+}
+
 function ArrayBufferToString(buffer)
 {
     return BinaryToString(String.fromCharCode.apply(null, Array.prototype.slice.apply(new Uint8Array(buffer))));

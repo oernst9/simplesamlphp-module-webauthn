@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" serverName="webauthn">
+  <component name="PublishConfigData" serverName="aa">
     <serverData>
-      <paths name="webauthn">
+      <paths name="aa">
         <serverdata>
           <mappings>
             <mapping deploy="/var/simplesamlphp/modules/webauthn" local="$PROJECT_DIR$" web="/" />

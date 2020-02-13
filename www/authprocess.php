@@ -86,6 +86,7 @@ if (isset($_POST['credentialChange']) && $_POST['credentialChange'] == "on") {
 } else {
     $state['FIDO2WantsRegister'] = false;
 }
+
 Auth\State::saveState($state, 'webauthn:request');
 
 if ($debugEnabled) {
