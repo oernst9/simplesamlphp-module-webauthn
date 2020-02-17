@@ -1,19 +1,22 @@
 <?php
 
-
 namespace SimpleSAML\Module\webauthn\WebAuthn;
+
 use SimpleSAML\Auth;
 use SimpleSAML\Module;
 use SimpleSAML\Utils;
+
 class StaticProcessHelper
 {
-    public static function saveStateAndRedirect(&$state) {
+    public static function saveStateAndRedirect(&$state)
+    {
         $id = Auth\State::saveState($state, 'webauthn:request');
         $url = Module::getModuleURL('webauthn/webauthn.php');
         Utils\HTTP::redirectTrustedURL($url, ['StateId' => $id]);
     }
 
-    public static function prepareState($stateData, &$state) {
+    public static function prepareState($stateData, &$state)
+    {
         $state['requestTokenModel'] = $stateData->requestTokenModel;
         $state['webauthn:store'] = $stateData->store;
         $state['FIDO2Tokens'] = $stateData->store->getTokenData($state['Attributes'][$stateData->usernameAttrib][0]);

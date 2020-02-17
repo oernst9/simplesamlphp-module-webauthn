@@ -7,11 +7,9 @@
  * @package SimpleSAMLphp
  */
 
-use SimpleSAML\Auth;
 use SimpleSAML\Auth\Simple;
 use SimpleSAML\Configuration;
 use SimpleSAML\Metadata\MetaDataStorageHandler;
-use SimpleSAML\Module;
 use SimpleSAML\Module\webauthn\Store;
 use SimpleSAML\Module\webauthn\WebAuthn\StateData;
 use SimpleSAML\Module\webauthn\WebAuthn\StaticProcessHelper;
@@ -20,7 +18,6 @@ use Webmozart\Assert\Assert;
 
 $config = Configuration::getOptionalConfig('module_webauthn.php')->toArray();
 assert(is_array($config));
-$uidAttribute = $config['attrib_username'];
 $as = new Simple('default-sp');
 $stateData = new StateData();
 $as->requireAuth();
@@ -51,5 +48,3 @@ $state['FIDO2AuthSuccessful'] = $state['FIDO2Tokens'][0][0];
 $state['FIDO2WantsRegister'] = true;
 
 StaticProcessHelper::saveStateAndRedirect($state);
-
-

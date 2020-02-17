@@ -7,9 +7,8 @@ use SimpleSAML\Logger;
 use SimpleSAML\Module;
 use SimpleSAML\Module\webauthn\WebAuthn\WebAuthnAbstractEvent;
 use SimpleSAML\Module\webauthn\WebAuthn\WebAuthnAuthenticationEvent;
-use Webmozart\Assert\Assert;
 
-if (session_status() != PHP_SESSION_ACTIVE) {
+if (session_status() !== PHP_SESSION_ACTIVE) {
     session_cache_limiter('nocache');
 }
 
@@ -37,7 +36,7 @@ $publicKey = false;
 $previousCounter = -1;
 
 foreach ($state['FIDO2Tokens'] as $oneToken) {
-    if ($oneToken[0] == $incomingID) {
+    if ($oneToken[0] === $incomingID) {
         // Credential ID is eligible for user $state['FIDO2Username'];
         // using publicKey $oneToken[1] with current counter value $oneToken[2]
         $publicKey = $oneToken[1];
@@ -47,7 +46,7 @@ foreach ($state['FIDO2Tokens'] as $oneToken) {
 }
 if ($publicKey === false) {
     throw new Exception(
-        "User attempted to authenticate with an unknown credential ID. This should already have been prevented by the browser!"
+        'User attempted to authenticate with an unknown credential ID. This should already have been prevented by the browser!'
     );
 }
 
@@ -57,11 +56,11 @@ $authObject = new WebAuthnAuthenticationEvent(
     ($state['FIDO2Scope'] === null ? $state['FIDO2DerivedScope'] : $state['FIDO2Scope']),
     $state['FIDO2SignupChallenge'],
     $state['IdPMetadata']['entityid'],
-    base64_decode($_POST['authenticator_data']),
-    base64_decode($_POST['client_data_raw']),
+    base64_decode($_POST['authenticator_data'], true),
+    base64_decode($_POST['client_data_raw'], true),
     $oneToken[0],
     $oneToken[1],
-    base64_decode($_POST['signature']),
+    base64_decode($_POST['signature'], true),
     $debugEnabled
 );
 
@@ -69,19 +68,19 @@ $authObject = new WebAuthnAuthenticationEvent(
  * §7.2 STEP 18 : detect physical object cloning on the token
  */
 $counter = $authObject->getCounter();
-if (($previousCounter != 0 || $counter != 0) && $counter > $previousCounter) {
+if (($previousCounter !== 0 || $counter !== 0) && $counter > $previousCounter) {
     // Signature counter was incremented compared to last time, good
     $store = $state['webauthn:store'];
     $store->updateSignCount($oneToken[0], $counter);
 } else {
     throw new Exception(
-        "Signature counter less or equal to a previous authentication! Token cloning likely (old: $previousCounter, new: $counter."
+        "Signature counter less or equal to a previous authentication! Token cloning likely (old: ${previousCounter}, new: ${counter}."
     );
 }
 // THAT'S IT. The user authenticated successfully. Remember the credential ID that was used.
 $state['FIDO2AuthSuccessful'] = $oneToken[0];
 // See if he wants to hang around for token management operations
-if (isset($_POST['credentialChange']) && $_POST['credentialChange'] == "on") {
+if (isset($_POST['credentialChange']) && $_POST['credentialChange'] === 'on') {
     $state['FIDO2WantsRegister'] = true;
 } else {
     $state['FIDO2WantsRegister'] = false;
@@ -92,10 +91,10 @@ Auth\State::saveState($state, 'webauthn:request');
 if ($debugEnabled) {
     echo $authObject->getDebugBuffer();
     echo $authObject->getValidateBuffer();
-    echo "Debug mode, not continuing to " . ($state['FIDO2WantsRegister'] ? "credential registration page." : "destination.");
+    echo 'Debug mode, not continuing to ' . ($state['FIDO2WantsRegister'] ? 'credential registration page.' : 'destination.');
 } else {
     if ($state['FIDO2WantsRegister']) {
-        header("Location: " . Module::getModuleURL('webauthn/webauthn.php?StateId=' . urlencode($id)));
+        header('Location: ' . Module::getModuleURL('webauthn/webauthn.php?StateId=' . urlencode($id)));
     } else {
         Auth\ProcessingChain::resumeProcessing($state);
     }

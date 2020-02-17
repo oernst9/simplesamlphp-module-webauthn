@@ -13,37 +13,30 @@
 namespace SimpleSAML\Module\webauthn\Auth\Process;
 
 use SimpleSAML\Auth;
+use SimpleSAML\Configuration;
 use SimpleSAML\Error;
 use SimpleSAML\Logger;
 use SimpleSAML\Module;
 use SimpleSAML\Module\webauthn\Store;
 use SimpleSAML\Module\webauthn\WebAuthn\StaticProcessHelper;
 use SimpleSAML\Utils;
-use SimpleSAML\Configuration;
 
 class WebAuthn extends Auth\ProcessingFilter
 {
-    /**
-     * An object with all the parameters that will be needed in the process
-     *
-     * @var Module\webauthn\WebAuthn\StateData
-     */
-    private $stateData;
-
     /**
      * @var boolean should new users be considered as enabled by default?
      */
     public $defaultEnabled;
 
     /**
-     * @var boolean switch that determines how $toggle will be used, if true then value of $toggle
+     * @var boolean switch that determines how 'toggle' will be used, if true then value of 'toggle'
      *              will mean whether to trigger (true) or not (false) the webauthn authentication,
      *              if false then $toggle means whether to switch the value of $defaultEnabled and then use that
      */
     public $force;
 
     /**
-     * @var boolean an attribute which is associated with $force because it determines its meaning,
+     * @var boolean an attribute which is associated with 'force' because it determines its meaning,
      *              it either simply means whether to trigger webauthn authentication or switch the default settings,
      *              if null (was not sent as attribute) then the information from database is used
      */
@@ -58,6 +51,13 @@ class WebAuthn extends Auth\ProcessingFilter
      * @var string|null AuthnContextClassRef
      */
     public $authnContextClassRef = null;
+
+    /**
+     * An object with all the parameters that will be needed in the process
+     *
+     * @var Module\webauthn\WebAuthn\StateData
+     */
+    private $stateData;
 
     /**
      * Initialize filter.
@@ -142,7 +142,6 @@ class WebAuthn extends Auth\ProcessingFilter
         }
         if (array_key_exists('authnContextClassRef', $moduleConfig)) {
             $this->authnContextClassRef = $moduleConfig['authnContextClassRef'];
-
         }
         if (array_key_exists('use_inflow_registration', $moduleConfig)) {
             $this->stateData->useInflowRegistration = $moduleConfig['use_inflow_registration'];
